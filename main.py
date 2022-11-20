@@ -30,8 +30,8 @@ def util_is_feasible(schedule):
     for job in schedule:
         dependencies = np.where(G_current[:, job - 1] == 1)[0]
         if len(dependencies) != 0:
-            for depency in dependencies:
-                print(f'{job} must be before {depency + 1}')
+            for dependency in dependencies:
+                print(f'{job} must be before {dependency + 1}')
             return False
         G_current[job - 1] = 0
     return True
@@ -54,11 +54,15 @@ def job_can_be_scheduled(job, set_of_jobs: set):
             return False
     return True
 
-
 def get_best_schedule_w_iterations():
     # Method without any modifications, nor iteration limitations
     iterations = 0
     q = PriorityQueue()
+
+    # Keep the longest schedule
+    longest_schedule: List = []
+    longest_schedule_tardiness = 1000000
+    longest_set_of_jobs = set()
 
     # Add the possible initial jobs to the priority queue
     for j, processing_time, due_date in J:
@@ -69,7 +73,7 @@ def get_best_schedule_w_iterations():
             tardiness = calc_tardiness_i([j])
             q.put((tardiness, [j], {j}))
 
-    while not q.empty():
+    while not q.empty() and iterations < 30000:
         print(iterations)
         iterations += 1
         tardiness, list_of_jobs, set_of_jobs = q.get()
@@ -85,6 +89,35 @@ def get_best_schedule_w_iterations():
                 new_tardiness = calc_tardiness_i(local_joblist)
                 local_jobset.add(job)
                 q.put((new_tardiness, local_joblist, local_jobset))
+
+                # If there is a tie, this is a bit extra
+                if len(local_joblist) == len(longest_schedule):
+                    # If the new tardiness is better than the old
+                    if new_tardiness < longest_schedule_tardiness:
+                        longest_schedule = local_joblist
+                        longest_schedule_tardiness = new_tardiness
+                        longest_set_of_jobs = local_jobset
+
+                elif len(local_joblist) > len(longest_schedule):
+                    longest_schedule = local_joblist
+                    longest_schedule_tardiness = new_tardiness
+                    longest_set_of_jobs = local_jobset
+
+    # Find missing jobs
+    missing_jobs = set(range(no_of_jobs)) - longest_set_of_jobs
+    while len(missing_jobs) > 0:
+        ready = []
+        for job in missing_jobs:
+            if job_can_be_scheduled(job, longest_set_of_jobs):
+                ready.append(job)
+
+        # Append the job with the highest due date, higher chances of getting a non tardy job
+        job_to_w_later_due_date = max(ready, key=lambda x: d[x])
+        longest_schedule.append(job_to_w_later_due_date)
+        missing_jobs.remove(job_to_w_later_due_date)
+        longest_set_of_jobs.add(job_to_w_later_due_date)
+
+    return list(reversed(longest_schedule))
 
 
 def get_best_schedule():
@@ -191,7 +224,7 @@ def get_best_schedule_beam(beam):
 # assert not job_can_be_scheduled(1, {30}), 'Job cannot be scheduled'
 
 # Test Complete Algorithm
-schedule = get_best_schedule()
+schedule = get_best_schedule_w_iterations()
 print(schedule)
 print(calc_tardiness_i(schedule, True))
 assert util_is_feasible(util_index2job(schedule)), 'Schedule should be feasible'
