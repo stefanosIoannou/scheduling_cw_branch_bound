@@ -22,28 +22,40 @@ def calc_tardiness_i(list_of_job_indexes, reverse=False):
             end_time -= job[1]
     return tardiness
 
+
 def util_is_feasible(schedule):
     # Return true if the schedule, (not reversed) is feasible.
     # This is the final schedule, jobs are not indexes!
-    G_current= np.copy(G)
+    G_current = np.copy(G)
     for job in schedule:
-        if len(np.where(G_current[:, job-1] == 1)[0]) != 0:
+        dependencies = np.where(G_current[:, job - 1] == 1)[0]
+        if len(dependencies) != 0:
+            for depency in dependencies:
+                print(f'{job} must be before {depency + 1}')
             return False
-        G_current[job-1] = 0
+        G_current[job - 1] = 0
     return True
 
-def util_is_complete(schedule):
-    return set(range(1,32)).issubset(schedule)
 
+def util_is_complete(schedule):
+    return set(range(1, 32)) == set(schedule)
+
+def util_index2job(schedule):
+    return [j+1 for j in schedule]
 
 def job_can_be_scheduled(job, set_of_jobs: set):
     # Check it the job can be schedules, i.e. the children of the job are already in the job_schedule.
     # Return true if it can be schedules, False otherwise
     dependencies = np.where(G[job] == 1)[0]
-    return set_of_jobs.issubset(dependencies)
+    if job in set_of_jobs:
+        return False
+    for dependency in dependencies:
+        if dependency not in set_of_jobs:
+            return False
+    return True
 
 
-def get_best_schedule(iterations=None):
+def get_best_schedule():
     # Method without any modifications
     iterations = 0
     q = PriorityQueue()
@@ -66,9 +78,6 @@ def get_best_schedule(iterations=None):
 
         for job in range(no_of_jobs):
             # Working in reversed order
-            if job in set_of_jobs:
-                continue
-            # What need to have already
             if job_can_be_scheduled(job, set_of_jobs):
                 local_joblist = list_of_jobs.copy()
                 local_jobset = set_of_jobs.copy()
@@ -78,7 +87,7 @@ def get_best_schedule(iterations=None):
                 q.put((new_tardiness, local_joblist, local_jobset))
 
 
-def get_best_schedule(beam):
+def get_best_schedule_beam(beam):
     # Get best schedule with beam
     q = PriorityQueue()
 
@@ -131,19 +140,30 @@ def get_best_schedule(beam):
 
             idx += 1
 
+### Tests on utility methods
+# # Check util for feasible jobs
+# dummy_schedule = [30, 4, 3]
+# assert util_is_feasible(dummy_schedule), 'Schedule is feasible'
+# dummy_schedule = [4, 30, 3]
+# assert not util_is_feasible(dummy_schedule), 'Schedule is feasible'
+#
+# # Check if the schedule is complete
+# dummy_schedule = list(range(1,32))
+# assert util_is_complete(dummy_schedule), 'Schedule is complete'
+# dummy_schedule = list(range(1,32))
+# dummy_schedule.remove(2)
+# assert not util_is_complete(dummy_schedule), 'Schedule is not complete'
 
-# Check util for feasible jobs
-dummy_schedule = [30, 4, 3]
-assert util_is_feasible(dummy_schedule), 'Schedule is feasible'
-dummy_schedule = [4, 30, 3]
-assert not util_is_feasible(dummy_schedule), 'Schedule is feasible'
+# Test can be scheduled
+# assert job_can_be_scheduled(1, {30,0}), 'Job can be scheduled'
+# assert not job_can_be_scheduled(1, {30}), 'Job cannot be scheduled'
 
-# Check if the schedule is complete
-dummy_schedule = list(range(1,32))
-assert util_is_complete(dummy_schedule), 'Schedule is complete'
-dummy_schedule = list(range(1,32))
-dummy_schedule.remove(2)
-assert not util_is_complete(dummy_schedule), 'Schedule is not complete'
+# Test Complete Algorithm
+schedule = get_best_schedule()
+print(schedule)
+print(calc_tardiness_i(schedule, True))
+assert util_is_feasible(util_index2job(schedule)), 'Schedule should be feasible'
+assert util_is_complete(util_index2job(schedule)), 'Schedule should be complete'
 
 # print(J)
 # schedule = get_best_schedule()
