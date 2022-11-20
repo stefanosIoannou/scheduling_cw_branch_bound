@@ -1,9 +1,24 @@
 from queue import PriorityQueue
 import numpy as np
 from task import *
-
+from collections import deque
 
 # entry structure: (tardiness, [list of jobs], set(jobs already scheduled))
+
+def calculate_hus_heuristic():
+    # Simple breath-first search
+    # TODO: This is wrong
+    q = deque()
+    q.append((29,7))
+    # Add the root
+    hmap = {}
+    while not len(q) == 0:
+        job, dist = q.popleft()
+        hmap[job] = dist
+        for children in np.where(G[job] == 1)[0]:
+            q.append((children, dist - 1))
+    return hmap
+
 
 def calc_tardiness_i(list_of_job_indexes, reverse=False):
     # Calculate the tardiness of the list of the schedule of jobs.
@@ -39,9 +54,11 @@ def util_is_feasible(schedule):
 
 
 def util_is_complete(schedule):
+    # Return if the schedule is complete
     return set(range(1, 32)) == set(schedule)
 
 def util_index2job(schedule):
+    # Turn a sequence of indexes to a sequence of jobs
     return [j+1 for j in schedule]
 
 def job_can_be_scheduled(job, set_of_jobs: set):
@@ -260,12 +277,16 @@ def get_best_schedule_beam(beam):
 # assert job_can_be_scheduled(1, {30,0}), 'Job can be scheduled'
 # assert not job_can_be_scheduled(1, {30}), 'Job cannot be scheduled'
 
-# Test Complete Algorithm
-schedule = get_best_schedule_w_iterations()
-print(schedule)
-print(calc_tardiness_i(schedule, True))
-assert util_is_feasible(util_index2job(schedule)), 'Schedule should be feasible'
-assert util_is_complete(util_index2job(schedule)), 'Schedule should be complete'
+# Test Hu's
+distances = calculate_hus_heuristic()
+assert distances[30] == 0, 'Incorrect distance for job 31'
+assert len(distances) == no_of_jobs, f'Incorrect number of jobs: {len(distances)}'
+
+# schedule = get_best_schedule_w_iterations()
+# print(schedule)
+# print(calc_tardiness_i(schedule, True))
+# assert util_is_feasible(util_index2job(schedule)), 'Schedule should be feasible'
+# assert util_is_complete(util_index2job(schedule)), 'Schedule should be complete'
 
 # print(J)
 # schedule = get_best_schedule()
