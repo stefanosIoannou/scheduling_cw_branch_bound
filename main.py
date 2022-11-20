@@ -6,7 +6,8 @@ from task import *
 # entry structure: (tardiness, [list of jobs], set(jobs already scheduled))
 
 def calc_tardiness_i(list_of_job_indexes, reverse=False):
-    # Calculate the tardiness of the list of the schedule of jobs
+    # Calculate the tardiness of the list of the schedule of jobs.
+    # Reverse is True if and only if the schedule is in the correct order
     tardiness = 0
     # Total Processing Time
     end_time = sum(p)
@@ -78,7 +79,7 @@ def get_best_schedule_w_iterations():
         iterations += 1
         tardiness, list_of_jobs, set_of_jobs = q.get()
         if len(list_of_jobs) == no_of_jobs:
-            return [j_i for j_i in reversed(list_of_jobs)]
+            return list(reversed(list_of_jobs))
 
         for job in range(no_of_jobs):
             # Working in reversed order
@@ -119,11 +120,28 @@ def get_best_schedule_w_iterations():
 
     return list(reversed(longest_schedule))
 
+def fathoming(upper_bound, pq: PriorityQueue):
+    print('Begin Fathoming')
+    to_append_back = []
+    no_fathomed = 0
+    while not pq.empty():
+        tardiness, list_of_jobs, set_of_jobs = pq.get()
+        if tardiness < upper_bound:
+            to_append_back.append((tardiness, list_of_jobs, set_of_jobs))
+        else:
+            # print(f'{tardiness} < {upper_bound}')
+            no_fathomed += 1
+    for entry in to_append_back:
+        pq.put(entry)
+
+    print(f'Number of nodes pruned: {no_fathomed}')
+
 
 def get_best_schedule():
     # Method without any modifications, nor iteration limitations
     iterations = 0
     q = PriorityQueue()
+    upper_bound = 10000000
 
     # Add the possible initial jobs to the priority queue
     for j, processing_time, due_date in J:
@@ -139,7 +157,7 @@ def get_best_schedule():
         iterations += 1
         tardiness, list_of_jobs, set_of_jobs = q.get()
         if len(list_of_jobs) == no_of_jobs:
-            return [j_i for j_i in reversed(list_of_jobs)]
+            return list(reversed(list_of_jobs))
 
         for job in range(no_of_jobs):
             # Working in reversed order
@@ -148,8 +166,16 @@ def get_best_schedule():
                 local_jobset = set_of_jobs.copy()
                 local_joblist.append(job)
                 new_tardiness = calc_tardiness_i(local_joblist)
-                local_jobset.add(job)
-                q.put((new_tardiness, local_joblist, local_jobset))
+
+                # Check for pruning
+                if new_tardiness < upper_bound:
+                    local_jobset.add(job)
+                    # If this is a trial solution:
+                    if len(local_joblist) == no_of_jobs:
+                        upper_bound = new_tardiness
+                        fathoming(upper_bound, q)
+
+                    q.put((new_tardiness, local_joblist, local_jobset))
 
 
 def get_best_schedule_beam(beam):
@@ -224,7 +250,7 @@ def get_best_schedule_beam(beam):
 # assert not job_can_be_scheduled(1, {30}), 'Job cannot be scheduled'
 
 # Test Complete Algorithm
-schedule = get_best_schedule_w_iterations()
+schedule = get_best_schedule()
 print(schedule)
 print(calc_tardiness_i(schedule, True))
 assert util_is_feasible(util_index2job(schedule)), 'Schedule should be feasible'
