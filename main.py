@@ -55,8 +55,40 @@ def job_can_be_scheduled(job, set_of_jobs: set):
     return True
 
 
+def get_best_schedule_w_iterations():
+    # Method without any modifications, nor iteration limitations
+    iterations = 0
+    q = PriorityQueue()
+
+    # Add the possible initial jobs to the priority queue
+    for j, processing_time, due_date in J:
+        # Add jobs that are not prerequisites for other jobs,
+        # i.e. jobs with no edges to other jobs, i.e. leaves
+        dependencies = np.where(G[j] == 1)[0]
+        if len(dependencies) == 0:
+            tardiness = calc_tardiness_i([j])
+            q.put((tardiness, [j], {j}))
+
+    while not q.empty():
+        print(iterations)
+        iterations += 1
+        tardiness, list_of_jobs, set_of_jobs = q.get()
+        if len(list_of_jobs) == no_of_jobs:
+            return [j_i for j_i in reversed(list_of_jobs)]
+
+        for job in range(no_of_jobs):
+            # Working in reversed order
+            if job_can_be_scheduled(job, set_of_jobs):
+                local_joblist = list_of_jobs.copy()
+                local_jobset = set_of_jobs.copy()
+                local_joblist.append(job)
+                new_tardiness = calc_tardiness_i(local_joblist)
+                local_jobset.add(job)
+                q.put((new_tardiness, local_joblist, local_jobset))
+
+
 def get_best_schedule():
-    # Method without any modifications
+    # Method without any modifications, nor iteration limitations
     iterations = 0
     q = PriorityQueue()
 
