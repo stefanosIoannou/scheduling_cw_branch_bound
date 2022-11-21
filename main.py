@@ -4,9 +4,61 @@ import numpy as np
 from task import *
 
 
+# Processing Times
+vii :        19.2204
+blur :       5.5903
+night :      22.7764
+onnx :       2.9165
+emboss :     1.7308
+muse :       14.7329
+wave :       10.6599
+
 q = PriorityQueue()
 # entry structure: (tardiness, [list of jobs], set(jobs already scheduled))
 
+def nonRecursiveTopologicalSortUtil(v, visited, stack):
+    # working stack contains key and the corresponding current generator
+    working_stack = [v]
+
+    while working_stack:
+        # get last element from stack
+        job = working_stack.pop()
+        visited[v] = True
+
+        # run through neighbor generator until it's empty
+        dependencies = np.where(G[job] == 1)[0]
+        for dependencie in dependencies:
+            if not visited[dependencie]:  # not seen before?
+                # remember current work
+                working_stack.append(v)
+                # restart with new neighbor
+                working_stack.append(list(range(no_of_jobs))[dependencie])
+                break
+        else:
+            # no already-visited neighbor (or no more of them)
+            stack.append(v)
+
+
+# The function to do Topological Sort.
+def nonRecursiveTopologicalSort(jobs_to_order, jobs_already_ordered):
+    # Remove the dependencies of jobs already ordered
+    for job in jobs_already_ordered:
+        G[job] = 0
+
+    # Mark all the vertices as not visited
+    visited = [False]*len(jobs_to_order)
+
+    # result stack
+    stack = []
+
+    # Call the helper function to store Topological
+    # Sort starting from all vertices one by one
+    for i in range(jobs_to_order):
+        if not (visited[i]):
+            nonRecursiveTopologicalSortUtil(i, visited, stack)
+    # Print contents of the stack in reverse
+    stack.reverse()
+    print(stack)
 
 
 def calc_tardiness_i(list_of_job_indexes, reverse=False):
