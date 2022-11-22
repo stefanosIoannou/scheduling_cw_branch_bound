@@ -3,6 +3,7 @@ import numpy as np
 from task import *
 from collections import deque
 
+
 # entry structure: (tardiness, [list of jobs], set(jobs already scheduled))
 
 
@@ -25,6 +26,7 @@ def calc_hus_heuristic():
     for j in range(no_of_jobs):
         hmap[j] = calc_distance_to_sink(j)
     return hmap
+
 
 def get_best_schedule_w_heuristic():
     # Method without any modifications, nor iteration limitations
@@ -117,17 +119,19 @@ def get_best_schedule_w_heuristic():
     # print(max_size_of_pending_list)
     return util_index2job(list(reversed(longest_schedule)))
 
+
 def calc_distance_to_sink(start_j):
     stack = deque()
-    stack.append((start_j,0))
+    stack.append((start_j, 0))
     while len(stack) != 0:
         j, d = stack.pop()
         for child in np.where(G[j] == 1)[0]:
             if child == 30:
-                return d+1
+                return d + 1
             else:
-                stack.append((child, d+1))
+                stack.append((child, d + 1))
     return 0
+
 
 def calc_tardiness_i(list_of_job_indexes, reverse=False):
     # Calculate the tardiness of the list of the schedule of jobs.
@@ -147,6 +151,7 @@ def calc_tardiness_i(list_of_job_indexes, reverse=False):
             end_time -= job[1]
     return tardiness
 
+
 def calc_tardiness(list_of_job_indexes, reverse=False):
     # Calculate the tardiness of the list of the schedule of jobs.
     # Reverse is True if and only if the schedule is in the correct order
@@ -155,7 +160,7 @@ def calc_tardiness(list_of_job_indexes, reverse=False):
     end_time = sum(p)
     if reverse:
         for j in reversed(list_of_job_indexes):
-            job = J[j-1]
+            job = J[j - 1]
             tardiness += max(0, end_time - job[2])
             end_time -= job[1]
     else:
@@ -184,9 +189,11 @@ def util_is_complete(schedule):
     # Return if the schedule is complete
     return set(range(1, 32)) == set(schedule)
 
+
 def util_index2job(schedule):
     # Turn a sequence of indexes to a sequence of jobs
-    return [j+1 for j in schedule]
+    return [j + 1 for j in schedule]
+
 
 def job_can_be_scheduled(job, set_of_jobs: set):
     # Check it the job can be schedules, i.e. the children of the job are already in the job_schedule.
@@ -269,7 +276,7 @@ def get_best_schedule_w_iterations():
                         longest_schedule_tardiness = new_tardiness
                         longest_set_of_jobs = local_jobset
 
-                max_size_of_pending_list = max(max_size_of_pending_list,q.qsize())
+                max_size_of_pending_list = max(max_size_of_pending_list, q.qsize())
 
     # Find missing jobs
     missing_jobs = set(range(no_of_jobs)) - longest_set_of_jobs
@@ -287,6 +294,7 @@ def get_best_schedule_w_iterations():
 
     print(max_size_of_pending_list)
     return util_index2job(list(reversed(longest_schedule)))
+
 
 def fathoming(upper_bound, pq: PriorityQueue):
     print('Begin Fathoming')
