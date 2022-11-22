@@ -26,6 +26,97 @@ def calc_hus_heuristic():
         hmap[j] = calc_distance_to_sink(j)
     return hmap
 
+def get_best_schedule_w_heuristic():
+    # Method without any modifications, nor iteration limitations
+    iterations = 0
+    q = PriorityQueue()
+
+    # Keep the longest schedule
+    longest_schedule: List = []
+    longest_hue_distance = 1000000
+    longest_set_of_jobs = set()
+    hue_distances = calc_hus_heuristic()
+
+    # Used for fathoming
+    upper_bound = 1000000000
+
+    # Add the possible initial jobs to the priority queue
+    for j, processing_time, due_date in J:
+        # Add jobs that are not prerequisites for other jobs,
+        # i.e. jobs with no edges to other jobs, i.e. leaves
+        dependencies = np.where(G[j] == 1)[0]
+        if len(dependencies) == 0:
+            q.put((hue_distances, [j], {j}))
+
+    # max_size_of_pending_list = q.qsize()
+
+    while not q.empty() and iterations < 30000:
+        # print(iterations)
+        iterations += 1
+        _, list_of_jobs, set_of_jobs = q.get()
+        if len(list_of_jobs) == no_of_jobs:
+            return util_index2job(list(reversed(list_of_jobs)))
+
+        # REMOVE COMMENTS TO GET CURRENT NODE AND TOTAL TARDINESS OF FIRST 2
+        # AND LAST 2 ITERATIONS
+        # if iterations <= 2 or iterations == 29999 or iterations == 29998:
+        #     print(f'Current Node [{iterations}]:'
+        #           f'{list(j + 1for j in reversed(list_of_jobs))}'
+        #           f'\nTotal Tardiness:{tardiness}')
+
+        for job in range(no_of_jobs):
+            # Working in reversed order
+            if job_can_be_scheduled(job, set_of_jobs):
+                local_joblist = list_of_jobs.copy()
+                local_jobset = set_of_jobs.copy()
+                local_joblist.append(job)
+                local_jobset.add(job)
+                # new_tardiness = calc_tardiness_i(local_joblist)
+                hue_distance = hue_distances[job]
+
+                # Fathoming
+                if hue_distance < upper_bound:
+                    if len(local_joblist) == no_of_jobs:
+                        if len(local_joblist) == no_of_jobs:
+                            upper_bound = hue_distance
+                            fathoming(upper_bound, q)
+
+                    q.put((hue_distance, local_joblist, local_jobset))
+
+                    # If there is a tie, this is a bit extra
+                    if len(local_joblist) == len(longest_schedule):
+                        # If the new tardiness is better than the old
+                        if hue_distance < longest_hue_distance:
+                            longest_schedule = local_joblist
+                            # longest_schedule_tardiness = new_tardiness
+                            longest_set_of_jobs = local_jobset
+                            longest_hue_distance = hue_distance
+
+                    elif len(local_joblist) > len(longest_schedule):
+                        longest_schedule = local_joblist
+                        # longest_schedule_tardiness = new_tardiness
+                        longest_hue_distance = hue_distance
+                        longest_set_of_jobs = local_jobset
+
+                # max_size_of_pending_list = max(max_size_of_pending_list,q.qsize())
+
+    # Find missing jobs
+    missing_jobs = set(range(no_of_jobs)) - longest_set_of_jobs
+    while len(missing_jobs) > 0:
+        ready = []
+        for job in missing_jobs:
+            if job_can_be_scheduled(job, longest_set_of_jobs):
+                ready.append(job)
+
+        # Append the job with the highest due date, higher chances of getting a non tardy job
+        job_to_w_later_due_date = max(ready, key=lambda x: d[x])
+        longest_schedule.append(job_to_w_later_due_date)
+        missing_jobs.remove(job_to_w_later_due_date)
+        longest_set_of_jobs.add(job_to_w_later_due_date)
+
+    # print(max_size_of_pending_list)
+    return util_index2job(list(reversed(longest_schedule)))
+
 def calc_distance_to_sink(start_j):
     stack = deque()
     stack.append((start_j,0))
@@ -351,7 +442,7 @@ def fathoming(upper_bound, pq: PriorityQueue):
 # elapsed_time = et - st
 # print('Execution time:', elapsed_time, 'seconds')
 
-schedule = get_best_schedule_w_iterations()
+# schedule = get_best_schedule_w_iterations()
 # print(schedule)
 # print(calc_tardiness(schedule, True))
 # assert util_is_feasible(util_index2job(schedule)), 'Schedule should be feasible'
@@ -371,3 +462,9 @@ schedule = get_best_schedule_w_iterations()
 
 # print(calc_tardiness_i(our, True))
 # print(calc_tardiness_i(jan, True))
+
+# Hus Heuristic
+schedule = get_best_schedule_w_heuristic()
+print(schedule)
+assert util_is_feasible(schedule), 'Schedule must be feasible'
+print(calc_tardiness(schedule, True))
