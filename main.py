@@ -313,6 +313,113 @@ def fathoming(upper_bound, pq: PriorityQueue):
     print(f'Number of nodes pruned: {no_fathomed}')
 
 
+def fathoming_stack(upper_bound, stack):
+    print('Begin Fathoming')
+    size = len(stack)
+    stack_filtered = list(filter(lambda x: x[0] < upper_bound, stack))
+
+    print(f'Number of nodes pruned: {size - len(stack_filtered)}')
+    return stack_filtered
+
+
+def get_best_schedule():
+    # Method without any modifications, nor iteration limitations
+    iterations = 0
+    q = PriorityQueue()
+    upper_bound = 10000000
+
+    # Add the possible initial jobs to the priority queue
+    for j, processing_time, due_date in J:
+        # Add jobs that are not prerequisites for other jobs,
+        # i.e. jobs with no edges to other jobs, i.e. leaves
+        dependencies = np.where(G[j] == 1)[0]
+        if len(dependencies) == 0:
+            tardiness = calc_tardiness_i([j])
+            q.put((tardiness, [j], {j}))
+
+    while not q.empty():
+        print(iterations)
+        iterations += 1
+        tardiness, list_of_jobs, set_of_jobs = q.get()
+        if len(list_of_jobs) == no_of_jobs:
+            return list(reversed(list_of_jobs))
+
+        for job in range(no_of_jobs):
+            # Working in reversed order
+            if job_can_be_scheduled(job, set_of_jobs):
+                local_joblist = list_of_jobs.copy()
+                local_jobset = set_of_jobs.copy()
+                local_joblist.append(job)
+                new_tardiness = calc_tardiness_i(local_joblist)
+
+                # Check for pruning
+                if new_tardiness < upper_bound:
+                    local_jobset.add(job)
+                    # If this is a trial solution:
+                    if len(local_joblist) == no_of_jobs:
+                        upper_bound = new_tardiness
+                        fathoming(upper_bound, q)
+
+                    q.put((new_tardiness, local_joblist, local_jobset))
+
+
+def get_best_schedule_dfs():
+    # Method without any modifications, nor iteration limitations
+    iterations = 0
+    s = []
+    upper_bound = 10000000
+
+    # Add the possible initial jobs to the stack
+    for j, processing_time, due_date in J:
+        # Add jobs that are not prerequisites for other jobs,
+        # i.e. jobs with no edges to other jobs, i.e. leaves
+        dependencies = np.where(G[j] == 1)[0]
+        if len(dependencies) == 0:
+            tardiness = calc_tardiness_i([j])
+            s.append((tardiness, [j], {j}))
+
+    best_schedule = []
+
+    while len(s) > 0:
+        iterations += 1
+        tardiness, list_of_jobs, set_of_jobs = s.pop()
+        print(iterations, tardiness)
+        if len(list_of_jobs) == no_of_jobs:
+            if tardiness <= upper_bound:
+                upper_bound = tardiness
+                best_schedule = list_of_jobs
+            # upper_bound = min(upper_bound, tardiness)
+            # return list(reversed(list_of_jobs))
+            pass
+        if iterations > 15000:
+            break
+
+        # Instead of adding all the jobs one by one, we batch them and add them after expanding
+        jobs_to_add = []
+        for job in range(no_of_jobs):
+            # Working in reversed order
+            if job_can_be_scheduled(job, set_of_jobs):
+                local_joblist = list_of_jobs.copy()
+                local_jobset = set_of_jobs.copy()
+                local_joblist.append(job)
+                new_tardiness = calc_tardiness_i(local_joblist)
+
+                # Check for pruning
+                if new_tardiness < upper_bound:
+                    local_jobset.add(job)
+                    # If this is a trial solution:
+                    if len(local_joblist) == no_of_jobs:
+                        print('-' * 20)
+                        print(f'New upper bound: {new_tardiness}')
+                        upper_bound = new_tardiness
+                        s = fathoming_stack(upper_bound, s)
+
+                    jobs_to_add.append((new_tardiness, local_joblist, local_jobset))
+        # Add the batched jobs in order of the tardiness
+        jobs_to_add.sort(key=lambda x: x[0], reverse=True)
+        s.extend(jobs_to_add)
+    return list(reversed(best_schedule))
+
 # def get_best_schedule():
 #     # Method without any modifications, nor iteration limitations
 #     iterations = 0
@@ -353,11 +460,10 @@ def fathoming(upper_bound, pq: PriorityQueue):
 #
 #                     q.put((new_tardiness, local_joblist, local_jobset))
 
-
 # def get_best_schedule_beam(beam):
 #     # Get best schedule with beam
 #     q = PriorityQueue()
-#
+# 
 #     # Add the possible initial jobs to the priority queue
 #     for j, processing_time, due_date in J:
 #         # Add jobs that are not prerequisites for other jobs,
@@ -366,20 +472,20 @@ def fathoming(upper_bound, pq: PriorityQueue):
 #         if len(dependencies) == 0:
 #             tardiness = calc_tardiness_i([j])
 #             q.put((tardiness, [j], {j}))
-#
+# 
 #     iterations = 0
 #     while not q.empty() and iterations < 30000:
 #         # print(iterations)
 #         iterations += 1
-#
+# 
 #         # Best schedule so far, with least tardiness
 #         # Important! List of jobs has the jobs in reverse order: i.e. from last to first
 #         tardiness, list_of_jobs, set_of_jobs = q.get()
-#
+# 
 #         # If all jobs have been allocated (and it is the minimum), we have found the best schedule
 #         if len(list_of_jobs) == no_of_jobs:
 #             return [j_i for j_i in reversed(list_of_jobs)]
-#
+# 
 #         # Stop the loop if this many schedules have been added
 #         counter = beam
 #         # Sort the jobs from soonest to latest
@@ -390,7 +496,7 @@ def fathoming(upper_bound, pq: PriorityQueue):
 #                 and due_dates_sorted_idxs[idx] not in set_of_jobs:
 #             job = due_dates_sorted_idxs[idx]
 #             # Working in reversed order
-#
+# 
 #             # For a job to be scheduled, the jobs that depend on it need to already been scheduled, otherwise it will
 #             # schedule jobs that lead to a sequence that does not respect precedence
 #             # dependencies = np.where(G[job] == 1)[0]
@@ -404,7 +510,7 @@ def fathoming(upper_bound, pq: PriorityQueue):
 #                 local_jobset.add(job)
 #                 q.put((new_tardiness, local_joblist, local_jobset))
 #                 counter -= 1
-#
+# 
 #             idx += 1
 
 ### Tests on utility methods
@@ -460,6 +566,9 @@ def fathoming(upper_bound, pq: PriorityQueue):
 # schedule = get_best_schedule()
 # print(schedule)
 # print(calc_tardiness(schedule, True))
+schedule = get_best_schedule_dfs()
+print(schedule)
+print(calc_tardiness_i(schedule, True))
 
 # jan = [30, 4, 10, 3, 23, 14, 20, 22, 21, 19, 18, 9, 8, 7, 6, 17, 16, 29, 28, 27, 26, 25, 24, 15, 13, 12, 11, 5, 2, 1, 31]
 # jan = [j_i - 1 for j_i in jan]
@@ -472,7 +581,7 @@ def fathoming(upper_bound, pq: PriorityQueue):
 # print(calc_tardiness_i(jan, True))
 
 # Hus Heuristic
-schedule = get_best_schedule_w_heuristic()
-print(schedule)
-assert util_is_feasible(schedule), 'Schedule must be feasible'
-print(calc_tardiness(schedule, True))
+# schedule = get_best_schedule_w_heuristic()
+# print(schedule)
+# assert util_is_feasible(schedule), 'Schedule must be feasible'
+# print(calc_tardiness(schedule, True))
