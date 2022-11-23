@@ -4,45 +4,23 @@ from task import *
 from collections import deque
 import argparse
 
-def calc_distance_to_sink(start_j):
-    stack = deque()
-    stack.append((start_j, 0))
-    while len(stack) != 0:
-        j, d = stack.pop()
-        for child in np.where(G[j] == 1)[0]:
-            if child == 30:
-                return d + 1
-            else:
-                stack.append((child, d + 1))
-    return 0
-
-
-def calc_hus_heuristic():
-    hmap = dict()
-    for j in range(no_of_jobs):
-        hmap[j] = calc_distance_to_sink(j)
-    return hmap
-
-
-def calculate_length_recusively(job):
-    # If all values in G[job] are 0, then job is a leaf
-    if np.sum(G[job]) == 0:
-        return 1
-    else:
-        return 1 + max([calculate_length_recusively(child) for child in np.where(G[job] == 1)[0]])
-
-
-def calculate_hus_heuristic_2():
+def calculate_hus_heuristic():
+    def calculate_length_recursively(job):
+        # If all values in G[job] are 0, then job is a leaf
+        if np.sum(G[job]) == 0:
+            return 1
+        else:
+            return 1 + max([calculate_length_recursively(child) for child in np.where(G[job] == 1)[0]])
     path_length = {}
     for j in range(no_of_jobs):
-        path_length[j] = calculate_length_recusively(j)
+        path_length[j] = calculate_length_recursively(j)
     return path_length
 
 
 def get_best_schedule_w_heuristic():
     # Method without any modifications, nor iteration limitations
 
-    hue_distances = calculate_hus_heuristic_2()
+    hue_distances = calculate_hus_heuristic()
     schedule = []
     missing_jobs = set(range(no_of_jobs))
     while len(missing_jobs) > 0:
@@ -50,11 +28,13 @@ def get_best_schedule_w_heuristic():
         for job in missing_jobs:
             if job_can_be_scheduled(job, set(schedule)):
                 ready.append(job)
-        min_job = min(ready, key=lambda x: (hue_distances[x], x))
+        # Hu algorithm schedules first jobs with the highest hue distance, but we are working in reverse. So we get the
+        # job with the lowest hue distance and brake ties with the highest job index
+        min_job = min(ready, key=lambda x: (hue_distances[x], -x))
         schedule.append(min_job)
         missing_jobs.remove(min_job)
 
-    return util_index2job(list(reversed(schedule)))
+    return util_index2job(reversed(list(schedule)))
 
 
 def calc_tardiness_i(list_of_job_indexes, reverse=False):
@@ -319,6 +299,7 @@ def get_best_schedule():
         iterations += 1
         tardiness, list_of_jobs, set_of_jobs = q.get()
         if len(list_of_jobs) == no_of_jobs:
+            print(f'Iterations: {iterations}]')
             return util_index2job(list(reversed(list_of_jobs)))
 
         for job in range(no_of_jobs):
