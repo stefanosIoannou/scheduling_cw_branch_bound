@@ -1,7 +1,7 @@
 import numpy as np
 
 # Processing Times and Duration for Q3
-p = [4, 17, 2, 2, 6, 2, 21, 6, 13, 6, 6, 2, 4, 4, 6, 13, 13, 13, 2, 4, 2, 4, 21, 6, 25, 17, 2, 4, 13, 2, 17]
+# p = [4, 17, 2, 2, 6, 2, 21, 6, 13, 6, 6, 2, 4, 4, 6, 13, 13, 13, 2, 4, 2, 4, 21, 6, 25, 17, 2, 4, 13, 2, 17]
 
 no_of_jobs = 31
 
@@ -126,7 +126,7 @@ def get_tuple_list_q2():
     for i in range(no_of_jobs):
         p.append(processing_times[node_types[i + 1].split('_')[0]])
 
-    return list(zip(range(len(p)), p, d))
+    return list(zip(range(len(p)), p, d)), p, d
 
 def get_tuple_list_q3():
     """
@@ -138,6 +138,6 @@ def get_tuple_list_q3():
 
     p = [4, 17, 2, 2, 6, 2, 21, 6, 13, 6, 6, 2, 4, 4, 6, 13, 13, 13, 2, 4, 2, 4, 21, 6, 25, 17, 2, 4, 13, 2, 17]
 
-    return list(zip(range(len(p)), p, d))
+    return list(zip(range(len(p)), p, d)), p, d
 
 # J = list(zip(range(len(p)), p, d))
