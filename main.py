@@ -7,19 +7,6 @@ from collections import deque
 # entry structure: (tardiness, [list of jobs], set(jobs already scheduled))
 
 
-# def calculate_hus_heuristic():
-#     # Simple breath-first search
-#     # TODO: This is wrong
-#     q = deque()
-#     q.append((29,7))
-#     # Add the root
-#     hmap = {}
-#     while not len(q) == 0:
-#         job, dist = q.popleft()
-#         hmap[job] = dist
-#         for children in np.where(G[job] == 1)[0]:
-#             q.append((children, dist - 1))
-#     return hmap
 def calc_distance_to_sink(start_j):
     stack = deque()
     stack.append((start_j, 0))
@@ -184,8 +171,12 @@ def calc_tardiness(list_of_job_indexes, reverse=False):
 
 
 def util_is_feasible(schedule):
-    # Return true if the schedule, (not reversed) is feasible.
-    # This is the final schedule, jobs are not indexes!
+    """
+    Return true if the schedule is complete, i.e. all jobs have been added
+
+    :param schedule: Schedule of jobs
+    :return: True if the schedule is complete, False otherwise
+    """
     G_current = np.copy(G)
     for job in schedule:
         dependencies = np.where(G_current[:, job - 1] == 1)[0]
@@ -198,16 +189,37 @@ def util_is_feasible(schedule):
 
 
 def util_is_complete(schedule):
+    """
+    Return true if the schedule is complete, i.e. all jobs have been added
+
+    :param schedule: Schedule of jobs
+    :return: True if the schedule is complete, False otherwise
+    """
     # Return if the schedule is complete
     return set(range(1, 32)) == set(schedule)
 
 
 def util_index2job(schedule):
-    # Turn a sequence of indexes to a sequence of jobs
+    """
+    Return a list of jobs, from a list of job indexes
+
+    :param schedule: Schedule of job indexes
+    :return: Schedule of jobs
+    """
     return [j + 1 for j in schedule]
 
 
 def job_can_be_scheduled(job, set_of_jobs: set):
+    """
+    Return true if a job can be scheduled, given a set of jobs that were already scheduled.
+    A job can be scheduled if all its children, i.e. the jobs it has an edge to, have already been added to the
+    list (since the jobs are added to the front of the schedule). A job cannot be scheduled if it has already been
+    scheduled. Return false otherwise.
+
+    :param job: job index to be added
+    :param set_of_jobs: a set of jobs already scheduled
+    :return: True if the job can be scheduled, False otherwise
+    """
     # Check it the job can be schedules, i.e. the children of the job are already in the job_schedule.
     # Return true if it can be schedules, False otherwise
     dependencies = np.where(G[job] == 1)[0]
@@ -219,13 +231,23 @@ def job_can_be_scheduled(job, set_of_jobs: set):
     return True
 
 
-def get_best_schedule_w_iterations():
+def get_best_schedule_w_iterations(J):
+    """
+    Run Branch and Bound algorithm for up to 30K iterations (Question 2). The solution from the algorithm is
+    made complete and feasible. During the first two and last two iterations, the current node and
+    the total tardiness of those nodes is reported. Add the end of the computation the maximum size of the
+    pending list is reported. A schedule is returned.
+
+    :param J: List of tuples, each tuple contains the job index, processing time of that job,
+    and the due date (in that order).
+    :return: Schedule found
+    """
     # Method without any modifications, nor iteration limitations
     iterations = 0
     q = PriorityQueue()
 
     # Keep the longest schedule
-    longest_schedule: List = []
+    longest_schedule = []
     longest_schedule_tardiness = 1000000
     longest_set_of_jobs = set()
 
@@ -252,10 +274,10 @@ def get_best_schedule_w_iterations():
 
         # REMOVE COMMENTS TO GET CURRENT NODE AND TOTAL TARDINESS OF FIRST 2
         # AND LAST 2 ITERATIONS
-        # if iterations <= 2 or iterations == 29999 or iterations == 29998:
-        #     print(f'Current Node [{iterations}]:'
-        #           f'{list(j + 1for j in reversed(list_of_jobs))}'
-        #           f'\nTotal Tardiness:{tardiness}')
+        if iterations <= 2 or iterations == 29999 or iterations == 29998:
+            print(f'Iter:{iterations}]:\n'
+                  f'    Current Node: {list(j + 1 for j in reversed(list_of_jobs))}\n'
+                  f'    Node Tardiness: {tardiness}\n')
 
         for job in range(no_of_jobs):
             # Working in reversed order
@@ -304,11 +326,18 @@ def get_best_schedule_w_iterations():
         missing_jobs.remove(job_to_w_later_due_date)
         longest_set_of_jobs.add(job_to_w_later_due_date)
 
-    print(max_size_of_pending_list)
+    print(f'max size of the pending list : {max_size_of_pending_list}')
     return util_index2job(list(reversed(longest_schedule)))
 
 
-def fathoming(upper_bound, pq: PriorityQueue):
+def fathoming(upper_bound, pq):
+    """
+    Perform fathoming on the pending list (priority queue), based on the upper bound
+
+    :param upper_bound: The upper bound. Any tardiness higher than this value is removed from the priority queue
+    :param pq: Priority Queue. The fathoming is done in place
+    :return: Fathomed Priority Queue
+    """
     print('Begin Fathoming')
     to_append_back = []
     no_fathomed = 0
@@ -326,6 +355,13 @@ def fathoming(upper_bound, pq: PriorityQueue):
 
 
 def fathoming_stack(upper_bound, stack):
+    """
+    Perform fathoming on the pending list (stack), based on the upper bound
+
+    :param upper_bound: The upper bound. Any tardiness higher than this value is removed from the stack
+    :param stack: Stack. A new stack is created
+    :return: Fathomed Priority stack
+    """
     print('Begin Fathoming')
     size = len(stack)
     stack_filtered = list(filter(lambda x: x[0] < upper_bound, stack))
@@ -334,11 +370,19 @@ def fathoming_stack(upper_bound, stack):
     return stack_filtered
 
 
-def get_best_schedule():
-    # Method without any modifications, nor iteration limitations
+def get_best_schedule(J):
+    """
+    Run Branch and Bound algorithm without any limitation to the number of iterations.
+    The schedule with the global optimum tardiness is returned.
+
+    :param J: List of tuples, each tuple contains the job index, processing time of that job,
+    and the due date (in that order).
+    :return: global optimum schedule
+    """
     iterations = 0
     q = PriorityQueue()
     upper_bound = 10000000
+    no_of_jobs = len(J)
 
     # Add the possible initial jobs to the priority queue
     for j, processing_time, due_date in J:
@@ -520,6 +564,7 @@ def get_best_schedule_dfs():
 
 
 # def get_best_schedule():
+#
 #     # Method without any modifications, nor iteration limitations
 #     iterations = 0
 #     q = PriorityQueue()
@@ -559,58 +604,6 @@ def get_best_schedule_dfs():
 #
 #                     q.put((new_tardiness, local_joblist, local_jobset))
 
-# def get_best_schedule_beam(beam):
-#     # Get best schedule with beam
-#     q = PriorityQueue()
-# 
-#     # Add the possible initial jobs to the priority queue
-#     for j, processing_time, due_date in J:
-#         # Add jobs that are not prerequisites for other jobs,
-#         # i.e. jobs with no edges to other jobs, i.e. leaves
-#         dependencies = np.where(G[j] == 1)[0]
-#         if len(dependencies) == 0:
-#             tardiness = calc_tardiness_i([j])
-#             q.put((tardiness, [j], {j}))
-# 
-#     iterations = 0
-#     while not q.empty() and iterations < 30000:
-#         # print(iterations)
-#         iterations += 1
-# 
-#         # Best schedule so far, with least tardiness
-#         # Important! List of jobs has the jobs in reverse order: i.e. from last to first
-#         tardiness, list_of_jobs, set_of_jobs = q.get()
-# 
-#         # If all jobs have been allocated (and it is the minimum), we have found the best schedule
-#         if len(list_of_jobs) == no_of_jobs:
-#             return [j_i for j_i in reversed(list_of_jobs)]
-# 
-#         # Stop the loop if this many schedules have been added
-#         counter = beam
-#         # Sort the jobs from soonest to latest
-#         due_dates_sorted_idxs = np.argsort(d)
-#         idx = 0
-#         # If job has already been scheduled, then skip
-#         while counter > 0 and idx < len(due_dates_sorted_idxs) \
-#                 and due_dates_sorted_idxs[idx] not in set_of_jobs:
-#             job = due_dates_sorted_idxs[idx]
-#             # Working in reversed order
-# 
-#             # For a job to be scheduled, the jobs that depend on it need to already been scheduled, otherwise it will
-#             # schedule jobs that lead to a sequence that does not respect precedence
-#             # dependencies = np.where(G[job] == 1)[0]
-#             if job_can_be_scheduled(job, set_of_jobs):
-#                 local_joblist = list_of_jobs.copy()
-#                 local_jobset = set_of_jobs.copy()
-#                 local_joblist.append(job)
-#                 new_tardiness = calc_tardiness_i(local_joblist)
-#                 # new_tardiness = new_tardiness + 0.075 * new_tardiness / len(local_joblist) * (
-#                 #         no_of_jobs - len(local_joblist))
-#                 local_jobset.add(job)
-#                 q.put((new_tardiness, local_joblist, local_jobset))
-#                 counter -= 1
-# 
-#             idx += 1
 
 ### Tests on utility methods
 # # Check util for feasible jobs
@@ -655,16 +648,16 @@ def get_best_schedule_dfs():
 # elapsed_time = et - st
 # print('Execution time:', elapsed_time, 'seconds')
 
-schedule = get_best_schedule_w_iterations()
-print(schedule)
-print(calc_tardiness(schedule, True))
+# schedule = get_best_schedule_w_iterations()
+# print(schedule)
+# print(calc_tardiness(schedule, True))
 # assert util_is_feasible(util_index2job(schedule)), 'Schedule should be feasible'
 # assert util_is_complete(util_index2job(schedule)), 'Schedule should be complete'
 
-print(J)
-schedule = get_best_schedule()
-print(schedule)
-print(calc_tardiness(schedule, True))
+# print(J)
+# schedule = get_best_schedule()
+# print(schedule)
+# print(calc_tardiness(schedule, True))
 # schedule = get_best_schedule_dfs()
 # print(schedule)
 # print(calc_tardiness_i(schedule, True))
@@ -734,3 +727,4 @@ print(calc_tardiness(schedule, True))
 #     error += abs(hus[job] - target[job])
 #
 # assert error == 0, f'Error in Hus heuristic: {error}'
+
