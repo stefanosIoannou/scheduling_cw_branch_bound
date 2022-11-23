@@ -473,7 +473,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-q', '--question', choices=[1, 2], type=int, required=True,
                     help='1 for question 1 processing times, '
                          '2 for question 2 processing times')
-parser.add_argument('--algo', type=str, choices=['bnb_unbounded', 'bnb', 'with_heuristic'],
+parser.add_argument('--algo', type=str, choices=['bnb_unbounded', 'bnb', 'bnb_hus'],
                     required=True, help='Algorithm to run')
 
 args = parser.parse_args()
@@ -492,7 +492,7 @@ if args.algo == 'bnb_unbounded':
 elif args.algo == 'bnb':
     print('Running Branch and Bound (Solution to Q2)')
     schedule = get_best_schedule_w_iterations()
-elif args.algo == 'with_heuristic':
+elif args.algo == 'bnb_hus':
     print('Running Branch and Bound with Hu\'s Heuristic (Solution to Q2)')
     schedule = get_best_schedule_w_heuristic()
 else:
