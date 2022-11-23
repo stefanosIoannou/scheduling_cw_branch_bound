@@ -20,12 +20,37 @@ from collections import deque
 #         for children in np.where(G[job] == 1)[0]:
 #             q.append((children, dist - 1))
 #     return hmap
+def calc_distance_to_sink(start_j):
+    stack = deque()
+    stack.append((start_j, 0))
+    while len(stack) != 0:
+        j, d = stack.pop()
+        for child in np.where(G[j] == 1)[0]:
+            if child == 30:
+                return d + 1
+            else:
+                stack.append((child, d + 1))
+    return 0
+
 
 def calc_hus_heuristic():
     hmap = dict()
     for j in range(no_of_jobs):
         hmap[j] = calc_distance_to_sink(j)
     return hmap
+
+def calculate_length_recusively(job):
+    # If all values in G[job] are 0, then job is a leaf
+    if np.sum(G[job]) == 0:
+        return 1
+    else:
+        return 1 + max([calculate_length_recusively(child) for child in np.where(G[job] == 1)[0]])
+
+def calculate_hus_heuristic_2():
+    path_length = {}
+    for j in range(no_of_jobs):
+        path_length[j] = calculate_length_recusively(j)
+    return path_length
 
 
 def get_best_schedule_w_heuristic():
@@ -37,7 +62,7 @@ def get_best_schedule_w_heuristic():
     longest_schedule: List = []
     longest_hue_distance = 1000000
     longest_set_of_jobs = set()
-    hue_distances = calc_hus_heuristic()
+    hue_distances = calculate_hus_heuristic_2()
 
     # Used for fathoming
     upper_bound = 1000000000
@@ -118,19 +143,6 @@ def get_best_schedule_w_heuristic():
 
     # print(max_size_of_pending_list)
     return util_index2job(list(reversed(longest_schedule)))
-
-
-def calc_distance_to_sink(start_j):
-    stack = deque()
-    stack.append((start_j, 0))
-    while len(stack) != 0:
-        j, d = stack.pop()
-        for child in np.where(G[j] == 1)[0]:
-            if child == 30:
-                return d + 1
-            else:
-                stack.append((child, d + 1))
-    return 0
 
 
 def calc_tardiness_i(list_of_job_indexes, reverse=False):
@@ -338,9 +350,52 @@ def get_best_schedule():
             q.put((tardiness, [j], {j}))
 
     while not q.empty():
+        # print(iterations)
+        iterations += 1
+        tardiness, list_of_jobs, set_of_jobs = q.get()
+        if len(list_of_jobs) == no_of_jobs:
+            return util_index2job(list(reversed(list_of_jobs)))
+
+        for job in range(no_of_jobs):
+            # Working in reversed order
+            if job_can_be_scheduled(job, set_of_jobs):
+                local_joblist = list_of_jobs.copy()
+                local_jobset = set_of_jobs.copy()
+                local_joblist.append(job)
+                local_jobset.add(job)
+                new_tardiness = calc_tardiness_i(local_joblist)
+
+                # Check for pruning
+                if new_tardiness < upper_bound:
+                    # If this is a trial solution:
+                    if len(local_joblist) == no_of_jobs:
+                        upper_bound = new_tardiness
+                        fathoming(upper_bound, q)
+
+                    q.put((new_tardiness, local_joblist, local_jobset))
+
+
+def get_best_schedule_pq_dfs():
+    # Method without any modifications, nor iteration limitations
+    iterations = 0
+    q = PriorityQueue()
+    upper_bound = 10000000
+    min_tardiness = 10000000
+
+    # Add the possible initial jobs to the priority queue
+    for j, processing_time, due_date in J:
+        # Add jobs that are not prerequisites for other jobs,
+        # i.e. jobs with no edges to other jobs, i.e. leaves
+        dependencies = np.where(G[j] == 1)[0]
+        if len(dependencies) == 0:
+            tardiness = calc_tardiness_i([j])
+            q.put((tardiness, [j], {j}))
+
+    while not q.empty():
         print(iterations)
         iterations += 1
         tardiness, list_of_jobs, set_of_jobs = q.get()
+        print(tardiness)
         if len(list_of_jobs) == no_of_jobs:
             return list(reversed(list_of_jobs))
 
@@ -360,7 +415,45 @@ def get_best_schedule():
                         upper_bound = new_tardiness
                         fathoming(upper_bound, q)
 
-                    q.put((new_tardiness, local_joblist, local_jobset))
+                    # q.put((new_tardiness, local_joblist, local_jobset))
+
+                    s = []
+                    s.append((new_tardiness, local_joblist, local_jobset))
+                    full_schedule = False
+                    while full_schedule is False and len(s) > 0:
+                        tardiness_s, list_of_jobs_s, set_of_jobs_s = s[-1]
+                        # print(len(set_of_jobs_s), len(s))
+                        if len(set_of_jobs_s) == 20 and len(s) == 41:
+                            print('here')
+                        if len(list_of_jobs_s) == no_of_jobs:
+                            full_schedule = True
+                            print('Found full schedule')
+                            if tardiness_s < upper_bound:
+                                upper_bound = tardiness_s
+                                # fathoming(upper_bound, q)
+                            break
+                        batches = []
+
+                        for job_s in range(no_of_jobs):
+                            if job_can_be_scheduled(job_s, set_of_jobs_s):
+                                local_joblist_s = list_of_jobs_s.copy()
+                                local_jobset_s = set_of_jobs_s.copy()
+                                local_joblist_s.append(job_s)
+                                local_jobset_s.add(job_s)
+                                new_tardiness_s = calc_tardiness_i(local_joblist_s)
+
+                                if new_tardiness_s < upper_bound:
+                                    batches.append((new_tardiness_s, local_joblist_s, local_jobset_s))
+
+                        if len(batches) > 0:
+                            break
+                        batches.sort(key=lambda x: x[0], reverse=True)
+                        s.extend(batches)
+                    for entry in s:
+                        q.put(entry)
+
+
+subschedules_tardiness = {}
 
 
 def get_best_schedule_dfs():
@@ -379,20 +472,19 @@ def get_best_schedule_dfs():
             s.append((tardiness, [j], {j}))
 
     best_schedule = []
-
+    counter = -1
     while len(s) > 0:
         iterations += 1
         tardiness, list_of_jobs, set_of_jobs = s.pop()
-        print(iterations, tardiness)
+        # print(iterations, tardiness)
         if len(list_of_jobs) == no_of_jobs:
             if tardiness <= upper_bound:
                 upper_bound = tardiness
                 best_schedule = list_of_jobs
             # upper_bound = min(upper_bound, tardiness)
             # return list(reversed(list_of_jobs))
-            pass
-        if iterations > 15000:
-            break
+        # if iterations > 15000:
+        #     break
 
         # Instead of adding all the jobs one by one, we batch them and add them after expanding
         jobs_to_add = []
@@ -411,14 +503,21 @@ def get_best_schedule_dfs():
                     if len(local_joblist) == no_of_jobs:
                         print('-' * 20)
                         print(f'New upper bound: {new_tardiness}')
+                        print(new_tardiness)
                         upper_bound = new_tardiness
-                        s = fathoming_stack(upper_bound, s)
+                        print(iterations)
+                        # s = fathoming_stack(upper_bound, s)
 
-                    jobs_to_add.append((new_tardiness, local_joblist, local_jobset))
+                    if subschedules_tardiness.get(frozenset(local_joblist), float('inf')) > new_tardiness:
+                        jobs_to_add.append((new_tardiness, local_joblist, local_jobset))
+                        subschedules_tardiness[frozenset(local_joblist)] = new_tardiness
+
         # Add the batched jobs in order of the tardiness
         jobs_to_add.sort(key=lambda x: x[0], reverse=True)
         s.extend(jobs_to_add)
+    print(iterations)
     return list(reversed(best_schedule))
+
 
 # def get_best_schedule():
 #     # Method without any modifications, nor iteration limitations
@@ -556,19 +655,23 @@ def get_best_schedule_dfs():
 # elapsed_time = et - st
 # print('Execution time:', elapsed_time, 'seconds')
 
-# schedule = get_best_schedule_w_iterations()
-# print(schedule)
-# print(calc_tardiness(schedule, True))
+schedule = get_best_schedule_w_iterations()
+print(schedule)
+print(calc_tardiness(schedule, True))
 # assert util_is_feasible(util_index2job(schedule)), 'Schedule should be feasible'
 # assert util_is_complete(util_index2job(schedule)), 'Schedule should be complete'
 
-# print(J)
-# schedule = get_best_schedule()
-# print(schedule)
-# print(calc_tardiness(schedule, True))
-schedule = get_best_schedule_dfs()
+print(J)
+schedule = get_best_schedule()
 print(schedule)
-print(calc_tardiness_i(schedule, True))
+print(calc_tardiness(schedule, True))
+# schedule = get_best_schedule_dfs()
+# print(schedule)
+# print(calc_tardiness_i(schedule, True))
+
+# schedule = get_best_schedule_pq_dfs()
+# print(schedule)
+# print(calc_tardiness_i(schedule, True))
 
 # jan = [30, 4, 10, 3, 23, 14, 20, 22, 21, 19, 18, 9, 8, 7, 6, 17, 16, 29, 28, 27, 26, 25, 24, 15, 13, 12, 11, 5, 2, 1, 31]
 # jan = [j_i - 1 for j_i in jan]
@@ -580,8 +683,54 @@ print(calc_tardiness_i(schedule, True))
 # print(calc_tardiness_i(our, True))
 # print(calc_tardiness_i(jan, True))
 
+
 # Hus Heuristic
 # schedule = get_best_schedule_w_heuristic()
 # print(schedule)
 # assert util_is_feasible(schedule), 'Schedule must be feasible'
 # print(calc_tardiness(schedule, True))
+
+# print(calc_hus_heuristic())
+# hus = calculate_hus_heuristic_2()
+# print(hus)
+
+# target = {
+#     30: 1,
+#     29: 13,
+#     28: 9,
+#     27: 8,
+#     26: 8,
+#     25: 7,
+#     24: 6,
+#     23: 5,
+#     22: 12,
+#     21: 11,
+#     20: 10,
+#     19: 11,
+#     18: 10,
+#     17: 9,
+#     16: 8,
+#     15: 7,
+#     14: 6,
+#     13: 7,
+#     12: 6,
+#     11: 5,
+#     10: 5,
+#     9: 12,
+#     8: 11,
+#     7: 10,
+#     6: 9,
+#     5: 8,
+#     4: 4,
+#     3: 12,
+#     2: 11,
+#     1: 3,
+#     0: 2,
+# }
+#
+# # Print the difference between the hus and target
+# error = 0
+# for job in hus:
+#     error += abs(hus[job] - target[job])
+#
+# assert error == 0, f'Error in Hus heuristic: {error}'

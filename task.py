@@ -1,7 +1,7 @@
 import numpy as np
 
 # Processing Times and Duration for Q3
-# p = [4, 17, 2, 2, 6, 2, 21, 6, 13, 6, 6, 2, 4, 4, 6, 13, 13, 13, 2, 4, 2, 4, 21, 6, 25, 17, 2, 4, 13, 2, 17]
+p = [4, 17, 2, 2, 6, 2, 21, 6, 13, 6, 6, 2, 4, 4, 6, 13, 13, 13, 2, 4, 2, 4, 21, 6, 25, 17, 2, 4, 13, 2, 17]
 
 no_of_jobs = 31
 
@@ -97,10 +97,10 @@ processing_times['emboss'] = 1.7741
 processing_times['muse'] = 14.6653
 processing_times['wave'] = 11.0234
 
-p = []
-
-for i in range(no_of_jobs):
-    p.append(processing_times[node_types[i+1].split('_')[0]])
+# p = []
+#
+# for i in range(no_of_jobs):
+#     p.append(processing_times[node_types[i+1].split('_')[0]])
 
 d = [172, 82, 18, 61, 93, 71, 217, 295, 290, 287, 253, 307, 279, 73, 355, 34, 233, 77, 88, 122, 71, 181, 340, 141, 209, 217, 256, 144, 307, 329, 269]
 J = list(zip(range(len(p)), p, d))
