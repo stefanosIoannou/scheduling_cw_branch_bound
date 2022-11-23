@@ -103,7 +103,7 @@ G[29, 28] = 1
 #     p.append(processing_times[node_types[i+1].split('_')[0]])
 
 
-def get_tuple_list_q2():
+def get_tuple_list_q1():
     """
     Return a list of tuples. Each tuple corresponds to a process and follows the following signature:
     (index_of_job, processing_time, due_date). This method uses the processing times acquired from Q1,

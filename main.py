@@ -2,10 +2,7 @@ from queue import PriorityQueue
 import numpy as np
 from task import *
 from collections import deque
-
-
-# entry structure: (tardiness, [list of jobs], set(jobs already scheduled))
-
+import argparse
 
 def calc_distance_to_sink(start_j):
     stack = deque()
@@ -159,15 +156,13 @@ def job_can_be_scheduled(job, set_of_jobs: set):
     return True
 
 
-def get_best_schedule_w_iterations(J):
+def get_best_schedule_w_iterations():
     """
     Run Branch and Bound algorithm for up to 30K iterations (Question 2). The solution from the algorithm is
     made complete and feasible. During the first two and last two iterations, the current node and
     the total tardiness of those nodes is reported. Add the end of the computation the maximum size of the
     pending list is reported. A schedule is returned.
 
-    :param J: List of tuples, each tuple contains the job index, processing time of that job,
-    and the due date (in that order).
     :return: Schedule found
     """
     # Method without any modifications, nor iteration limitations
@@ -203,7 +198,7 @@ def get_best_schedule_w_iterations(J):
         # REMOVE COMMENTS TO GET CURRENT NODE AND TOTAL TARDINESS OF FIRST 2
         # AND LAST 2 ITERATIONS
         if iterations <= 2 or iterations == 29999 or iterations == 29998:
-            print(f'Iter:{iterations}]:\n'
+            print(f'Iter:[{iterations}]:\n'
                   f'    Current Node: {list(j + 1 for j in reversed(list_of_jobs))}\n'
                   f'    Node Tardiness: {tardiness}\n')
 
@@ -298,13 +293,11 @@ def fathoming_stack(upper_bound, stack):
     return stack_filtered
 
 
-def get_best_schedule(J):
+def get_best_schedule():
     """
     Run Branch and Bound algorithm without any limitation to the number of iterations.
     The schedule with the global optimum tardiness is returned.
 
-    :param J: List of tuples, each tuple contains the job index, processing time of that job,
-    and the due date (in that order).
     :return: global optimum schedule
     """
     iterations = 0
@@ -491,168 +484,38 @@ def get_best_schedule_dfs():
     return list(reversed(best_schedule))
 
 
-# def get_best_schedule():
-#
-#     # Method without any modifications, nor iteration limitations
-#     iterations = 0
-#     q = PriorityQueue()
-#     upper_bound = 10000000
-#
-#     # Add the possible initial jobs to the priority queue
-#     for j, processing_time, due_date in J:
-#         # Add jobs that are not prerequisites for other jobs,
-#         # i.e. jobs with no edges to other jobs, i.e. leaves
-#         dependencies = np.where(G[j] == 1)[0]
-#         if len(dependencies) == 0:
-#             tardiness = calc_tardiness_i([j])
-#             q.put((tardiness, [j], {j}))
-#
-#     while not q.empty():
-#         print(iterations)
-#         iterations += 1
-#         tardiness, list_of_jobs, set_of_jobs = q.get()
-#         if len(list_of_jobs) == no_of_jobs:
-#             return util_index2job(list(reversed(list_of_jobs)))
-#
-#         for job in range(no_of_jobs):
-#             # Working in reversed order
-#             if job_can_be_scheduled(job, set_of_jobs):
-#                 local_joblist = list_of_jobs.copy()
-#                 local_jobset = set_of_jobs.copy()
-#                 local_joblist.append(job)
-#                 new_tardiness = calc_tardiness_i(local_joblist)
-#
-#                 # Check for pruning
-#                 if new_tardiness < upper_bound:
-#                     local_jobset.add(job)
-#                     # If this is a trial solution:
-#                     if len(local_joblist) == no_of_jobs:
-#                         upper_bound = new_tardiness
-#                         fathoming(upper_bound, q)
-#
-#                     q.put((new_tardiness, local_joblist, local_jobset))
+### Argparser
+parser = argparse.ArgumentParser(
+    prog='SchedulingC Coursework',
+    description='Run scheduling algorithms using processing times from q1 or q3')
 
+parser.add_argument('-q', '--question', choices=[1, 2], type=int, required=True,
+                    help='1 for question 1 processing times, '
+                         '2 for question 2 processing times')
+parser.add_argument('--algo', type=str, choices=['bnb_unbounded', 'bnb', 'with_heuristic'],
+                    required=True, help='Algorithm to run')
 
-### Tests on utility methods
-# # Check util for feasible jobs
-# dummy_schedule = [30, 4, 3]
-# assert util_is_feasible(dummy_schedule), 'Schedule is feasible'
-# dummy_schedule = [4, 30, 3]
-# assert not util_is_feasible(dummy_schedule), 'Schedule is feasible'
-#
-# # Check if the schedule is complete
-# dummy_schedule = list(range(1,32))
-# assert util_is_complete(dummy_schedule), 'Schedule is complete'
-# dummy_schedule = list(range(1,32))
-# dummy_schedule.remove(2)
-# assert not util_is_complete(dummy_schedule), 'Schedule is not complete'
+args = parser.parse_args()
 
-# Test can be scheduled
-# assert job_can_be_scheduled(1, {30,0}), 'Job can be scheduled'
-# assert not job_can_be_scheduled(1, {30}), 'Job cannot be scheduled'
+if args.question == 1:
+    print('Using processing times from question 1')
+    J, p, d = get_tuple_list_q1()
+elif args.question == 2:
+    print('Using processing times from question 3')
+    J, p, d = get_tuple_list_q3()
 
-# Test Hu's
-# distance = calc_hus_heuristic()
-# print(distance)
+schedule = None
+if args.algo == 'bnb_unbounded':
+    print('Running Branch and Bound Unbounded')
+    schedule = get_best_schedule()
+elif args.algo == 'bnb':
+    print('Running Branch and Bound (Solution to Q2)')
+    schedule = get_best_schedule_w_iterations()
+elif args.algo == 'with_heuristic':
+    print('Running Branch and Bound with Hu\'s Heuristic (Solution to Q2)')
+    schedule = get_best_schedule_w_heuristic()
+else:
+    print('Nothing to run here')
 
-# assert distances[30] == 0, 'Incorrect distance for job 31'
-# assert len(distances) == no_of_jobs, f'Incorrect number of jobs: {len(distances)}'
-
-# from timeit import Timer
-# timer = Timer("""get_best_schedule_w_iterations()""")
-# print(timer.timeit())
-
-# import time
-
-# get the start time
-
-# main program
-# find sum to first 1 million numbers
-
-# get the end time
-# et = time.time()
-
-# get the execution time
-# elapsed_time = et - st
-# print('Execution time:', elapsed_time, 'seconds')
-
-# schedule = get_best_schedule_w_iterations()
-# print(schedule)
-# print(calc_tardiness(schedule, True))
-# assert util_is_feasible(util_index2job(schedule)), 'Schedule should be feasible'
-# assert util_is_complete(util_index2job(schedule)), 'Schedule should be complete'
-
-# print(J)
-# schedule = get_best_schedule()
-# print(schedule)
-# print(calc_tardiness(schedule, True))
-# schedule = get_best_schedule_dfs()
-# print(schedule)
-# print(calc_tardiness_i(schedule, True))
-
-# schedule = get_best_schedule_pq_dfs()
-# print(schedule)
-# print(calc_tardiness_i(schedule, True))
-
-# jan = [30, 4, 10, 3, 23, 14, 20, 22, 21, 19, 18, 9, 8, 7, 6, 17, 16, 29, 28, 27, 26, 25, 24, 15, 13, 12, 11, 5, 2, 1, 31]
-# jan = [j_i - 1 for j_i in jan]
-
-# our = [29, 3, 2, 22, 21, 20, 19, 18, 17, 13, 9, 8, 7, 6, 5, 16, 15, 28, 27, 26, 25, 24, 23, 14, 12, 11, 10, 4, 1, 0, 30]
-
-# print(calc_tardiness_i(jan))
-
-# print(calc_tardiness_i(our, True))
-# print(calc_tardiness_i(jan, True))
-
-
-# Hus Heuristic
-schedule = get_best_schedule_w_heuristic()
-print(schedule)
-print(calc_tardiness(schedule, True))
-# assert util_is_feasible(schedule), 'Schedule must be feasible'
-# print(calc_tardiness(schedule, True))
-
-# print(calc_hus_heuristic())
-# hus = calculate_hus_heuristic_2()
-# print(hus)
-
-# target = {
-#     30: 1,
-#     29: 13,
-#     28: 9,
-#     27: 8,
-#     26: 8,
-#     25: 7,
-#     24: 6,
-#     23: 5,
-#     22: 12,
-#     21: 11,
-#     20: 10,
-#     19: 11,
-#     18: 10,
-#     17: 9,
-#     16: 8,
-#     15: 7,
-#     14: 6,
-#     13: 7,
-#     12: 6,
-#     11: 5,
-#     10: 5,
-#     9: 12,
-#     8: 11,
-#     7: 10,
-#     6: 9,
-#     5: 8,
-#     4: 4,
-#     3: 12,
-#     2: 11,
-#     1: 3,
-#     0: 2,
-# }
-#
-# # Print the difference between the hus and target
-# error = 0
-# for job in hus:
-#     error += abs(hus[job] - target[job])
-#
-# assert error == 0, f'Error in Hus heuristic: {error}'
+print(f'Final Schedule: {schedule}\n'
+      f'Total Tardiness: {calc_tardiness(schedule, True)}')
