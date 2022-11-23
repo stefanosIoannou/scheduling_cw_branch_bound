@@ -151,139 +151,109 @@ def moore_hodgson(jobs):
     return len(tardy_schedule)
 
 def get_best_schedule():
-    def get_best_schedule_i(upper_bound=float('inf'), heuristic=False):
-        i = 0
-        longest_schedule = []
-        longest_schedule_tardiness = float('inf')
-        longest_set_of_jobs = set()
+    i = 0
+    longest_schedule = []
+    longest_schedule_tardiness = float('inf')
+    longest_set_of_jobs = set()
 
-        q = PriorityQueue()
-        for j, processing_time, due_date in J:
-            # print('This is a job', j)
-            # print(tardiness)
-            # Bit Magic
-            # bin_set = 1
-            # bin_set &= ~(1 << j)
+    q = PriorityQueue()
+    for j, processing_time, due_date in J:
+        # print('This is a job', j)
+        # print(tardiness)
+        # Bit Magic
+        # bin_set = 1
+        # bin_set &= ~(1 << j)
 
-            # Add jobs that are not prerequisites for other jobs
-            dependencies = np.where(G[j] == 1)[0]
-            if len(dependencies) == 0:
-                # tardiness = calc_tardiness_i([j])
-                tardiness = tardy_so_far([j])  # TODO: remove this
-                q.put((tardiness, [j], {j}))
+        # Add jobs that are not prerequisites for other jobs
+        dependencies = np.where(G[j] == 1)[0]
+        if len(dependencies) == 0:
+            # tardiness = calc_tardiness_i([j])
+            tardiness = tardy_so_far([j])  # TODO: remove this
+            q.put((tardiness, [j], {j}))
 
-        # while not q.empty() and i < 30000:
-        while not q.empty():
+    # while not q.empty() and i < 30000:
+    while not q.empty():
+        if i % 1000 == 0:
             print(i)
-            i += 1
+        i += 1
 
-            # Get the front of the queue
-            tardiness, list_of_jobs, set_of_jobs = q.get()
-            # If all jobs have been allocated (and it is the minimum), we have found the best schedule
-            if len(list_of_jobs) == no_of_jobs:
-                return [j_i for j_i in reversed(list_of_jobs)]
+        # Get the front of the queue
+        tardiness, list_of_jobs, set_of_jobs = q.get()
+        # If all jobs have been allocated (and it is the minimum), we have found the best schedule
+        if len(list_of_jobs) == no_of_jobs:
+            print(i)
+            return [j_i for j_i in reversed(list_of_jobs)]
 
-            # counter = 3
-            # for job in reversed(np.argsort(d)):
-            for job in range(no_of_jobs):
-                # if counter <= 0:
-                #     break
-                # Working in reversed order
+        # counter = 3
+        # for job in reversed(np.argsort(d)):
+        for job in range(no_of_jobs):
+            # if counter <= 0:
+            #     break
+            # Working in reversed order
 
-                # If job has already been scheduled, then skip
-                if job in set_of_jobs:
-                    continue
+            # If job has already been scheduled, then skip
+            if job in set_of_jobs:
+                continue
 
-                # For a job to be scheduled, the jobs that depend on it need to already been scheduled, otherwise it will
-                # schedule jobs that lead to a sequence that does not respect precedence
-                dependencies = np.where(G[job] == 1)[0]
-                flag = True
+            # For a job to be scheduled, the jobs that depend on it need to already been scheduled, otherwise it will
+            # schedule jobs that lead to a sequence that does not respect precedence
+            dependencies = np.where(G[job] == 1)[0]
+            flag = True
 
-                for dependencie in dependencies:
-                    if dependencie not in set_of_jobs:
-                        flag = False
-                        break
-                if flag is False:
-                    continue
+            for dependencie in dependencies:
+                if dependencie not in set_of_jobs:
+                    flag = False
+                    break
+            if flag is False:
+                continue
 
-                local_joblist = list_of_jobs.copy()
-                local_jobset = set_of_jobs.copy()
-                local_joblist.append(job)
-                # Get the longest_job, use total tardiness to break ties
-                # Normal tardiness
-                # new_tardiness = calc_tardiness_i(local_joblist)
-                # Number of tardy jobs
-                # new_tardiness = tardy_so_far(local_joblist) # TODO: remove this
-                # missing_jobs = set(range(no_of_jobs)) - local_jobset
-                # new_tardiness += moore_hodgson(missing_jobs)
+            local_joblist = list_of_jobs.copy()
+            local_jobset = set_of_jobs.copy()
+            local_joblist.append(job)
+            # Get the longest_job, use total tardiness to break ties
+            # Normal tardiness
+            # new_tardiness = calc_tardiness_i(local_joblist)
+            # Number of tardy jobs
+            # new_tardiness = tardy_so_far(local_joblist) # TODO: remove this
+            # missing_jobs = set(range(no_of_jobs)) - local_jobset
+            # new_tardiness += moore_hodgson(missing_jobs)
 
-                # Tardiness heuristic by proportion of tardy jobs
-                # new_tardiness = calc_tardiness_i(local_joblist)
-                # new_tardiness += tardy_so_far(local_joblist)/len(local_joblist)*(no_of_jobs-len(local_joblist))*(new_tardiness/len(local_joblist))
+            # Tardiness heuristic by proportion of tardy jobs
+            # new_tardiness = calc_tardiness_i(local_joblist)
+            # new_tardiness += tardy_so_far(local_joblist)/len(local_joblist)*(no_of_jobs-len(local_joblist))*(new_tardiness/len(local_joblist))
 
-                # Tardiness heuristic by proportion of tardy jobs and moore hodgson - seems promising
-                # new_tardiness = calc_tardiness_i(local_joblist)
-                # missing_jobs = set(range(no_of_jobs)) - local_jobset
-                # new_tardiness += moore_hodgson(missing_jobs)*(new_tardiness/len(local_joblist))
+            # Tardiness heuristic by proportion of tardy jobs and moore hodgson - seems promising
+            new_tardiness = calc_tardiness_i(local_joblist)
+            missing_jobs = set(range(no_of_jobs)) - local_jobset
+            new_tardiness += moore_hodgson(missing_jobs)*(new_tardiness/len(local_joblist))
 
-                # Heuristics
-                new_tardiness = calc_tardiness_i(local_joblist)
-                if heuristic:
-                    new_tardiness = new_tardiness + 0.5 * new_tardiness / len(local_joblist) * (no_of_jobs - len(local_joblist))
+            # Heuristics
+            # new_tardiness = calc_tardiness_i(local_joblist)
+            # new_tardiness = new_tardiness + 0.075 * new_tardiness / len(local_joblist) * (no_of_jobs - len(local_joblist))
 
-                if new_tardiness > upper_bound:
-                    continue
 
-                if len(local_joblist) == len(longest_schedule):
-                    # Check the tardiness
-                    if new_tardiness < longest_schedule_tardiness:
-                        longest_schedule = local_joblist
-                        longest_schedule_tardiness = new_tardiness
-                        longest_set_of_jobs = local_jobset
-
-                elif len(local_joblist) > len(longest_schedule):
+            if len(local_joblist) == len(longest_schedule):
+                # Check the tardiness
+                if new_tardiness < longest_schedule_tardiness:
                     longest_schedule = local_joblist
                     longest_schedule_tardiness = new_tardiness
                     longest_set_of_jobs = local_jobset
 
-                local_jobset.add(job)
-                q.put((new_tardiness, local_joblist, local_jobset))
-                # counter -= 1
+            elif len(local_joblist) > len(longest_schedule):
+                longest_schedule = local_joblist
+                longest_schedule_tardiness = new_tardiness
+                longest_set_of_jobs = local_jobset
 
-        # Last resort: We have the greedy less tardy solution, and longest
-        missing_jobs = set(range(no_of_jobs)) - longest_set_of_jobs
-
-        def dependencies_fulfilled(job, set_of_jobs):
-            dependencies = np.where(G[job] == 1)[0]
-            for dependencie in dependencies:
-                if dependencie not in set_of_jobs:
-                    return False
-            return True
-        print(longest_schedule)
-        print(missing_jobs)
-        while len(missing_jobs) > 0:
-            ready = []
-            for job in missing_jobs:
-                if dependencies_fulfilled(job, longest_set_of_jobs):
-                    ready.append(job)
-            for job in sorted(ready, key=lambda x: d[x], reverse=True):
-                longest_schedule.append(job)
-                missing_jobs.remove(job)
-                longest_set_of_jobs.add(job)
-                break
-
-        return [j_i for j_i in reversed(longest_schedule)]
-    schedule = get_best_schedule_i(heuristic=True)
-    upper_bound = calc_tardiness_i(schedule, True)
-    return get_best_schedule_i(upper_bound)
-
+            local_jobset.add(job)
+            q.put((new_tardiness, local_joblist, local_jobset))
+            # counter -= 1
 
 
 
 
 
 # print(J)
-print(calc_tardiness_i(edd(list(range(no_of_jobs))), True))
+# print(calc_tardiness_i(edd(list(range(no_of_jobs))), True))
 schedule = get_best_schedule()
 print(schedule)
 print(calc_tardiness_i(schedule, True))
