@@ -4,6 +4,7 @@ from task import *
 from collections import deque
 import argparse
 
+
 def calculate_hus_heuristic():
     def calculate_length_recursively(job):
         # If all values in G[job] are 0, then job is a leaf
@@ -11,6 +12,7 @@ def calculate_hus_heuristic():
             return 1
         else:
             return 1 + max([calculate_length_recursively(child) for child in np.where(G[job] == 1)[0]])
+
     path_length = {}
     for j in range(no_of_jobs):
         path_length[j] = calculate_length_recursively(j)
@@ -136,7 +138,7 @@ def job_can_be_scheduled(job, set_of_jobs: set):
     return True
 
 
-def get_best_schedule_w_iterations():
+def get_best_schedule_w_iterations(verbose=False):
     """
     Run Branch and Bound algorithm for up to 30K iterations (Question 2). The solution from the algorithm is
     made complete and feasible. During the first two and last two iterations, the current node and
@@ -174,6 +176,12 @@ def get_best_schedule_w_iterations():
         tardiness, list_of_jobs, set_of_jobs = q.get()
         if len(list_of_jobs) == no_of_jobs:
             return util_index2job(list(reversed(list_of_jobs)))
+
+        if verbose:
+            with open('bnb_partial_solutions.txt', 'a' if iterations > 1 else 'w') as f:
+                f.write(f'---------------------------------------------------------------Iter:[{iterations}]:\n'
+                        f'    Current Node: {list(j + 1 for j in reversed(list_of_jobs))}\n'
+                        f'    Node Tardiness: {tardiness}\n')
 
         # REMOVE COMMENTS TO GET CURRENT NODE AND TOTAL TARDINESS OF FIRST 2
         # AND LAST 2 ITERATIONS
@@ -273,7 +281,7 @@ def fathoming_stack(upper_bound, stack):
     return stack_filtered
 
 
-def get_best_schedule():
+def get_best_schedule(verbose=False):
     """
     Run Branch and Bound algorithm without any limitation to the number of iterations.
     The schedule with the global optimum tardiness is returned.
@@ -301,6 +309,12 @@ def get_best_schedule():
         if len(list_of_jobs) == no_of_jobs:
             print(f'Iterations: {iterations}]')
             return util_index2job(list(reversed(list_of_jobs)))
+
+        if verbose:
+            with open('bnb_unbounded.txt', 'a' if iterations > 1 else 'w') as f:
+                f.write(f'---------------------------------------------------------------Iter:[{iterations}]:\n'
+                        f'    Current Node: {list(j + 1 for j in reversed(list_of_jobs))}\n'
+                        f'    Node Tardiness: {tardiness}\n')
 
         for job in range(no_of_jobs):
             # Working in reversed order
@@ -475,6 +489,7 @@ parser.add_argument('-q', '--question', choices=[1, 2], type=int, required=True,
                          '2 for question 2 processing times')
 parser.add_argument('--algo', type=str, choices=['bnb_unbounded', 'bnb', 'bnb_hus'],
                     required=True, help='Algorithm to run')
+parser.add_argument('-v', '--verbose', action='store_true', help='Print partial solutions for each iteration')
 
 args = parser.parse_args()
 
@@ -485,16 +500,18 @@ elif args.question == 2:
     print('Using processing times from question 3')
     J, p, d = get_tuple_list_q3()
 
+verbose = args.verbose
 schedule = None
 if args.algo == 'bnb_unbounded':
     print('Running Branch and Bound Unbounded')
-    schedule = get_best_schedule()
+    schedule = get_best_schedule(verbose)
 elif args.algo == 'bnb':
     print('Running Branch and Bound (Solution to Q2)')
-    schedule = get_best_schedule_w_iterations()
+    schedule = get_best_schedule_w_iterations(verbose)
 elif args.algo == 'bnb_hus':
     print('Running Branch and Bound with Hu\'s Heuristic (Solution to Q2)')
-    schedule = get_best_schedule_w_heuristic()
+    # TODO: Needs attention
+    schedule = get_best_schedule_w_heuristic(verbose)
 else:
     print('Nothing to run here')
 
