@@ -15,5 +15,7 @@ python3 main.py --q 1 --algo 'bnb_hus'
 python3 main.py --q 1 --algo 'bnb_unbound'
 # Using Q3 processing times
 python3 main.py --q 2 --algo 'bnb_unbound'
-
 ```
+
+To get a list of partial solutions use the flag `--verbose`, with any command to generate a *.txt file, 
+with the current node at each iteration and total tardiness
