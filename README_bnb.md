@@ -1,9 +1,11 @@
 This is the Branch and Bound Coursework
 
 ```bash
-# Run the Branch and Bound algorithm with 
-# the processing times of question 1 (Question 2 solution)
+# Run the Branch and Bound algorithm using: 
+# the processing times of Q1 (Question 2 solution)
 python3 main.py --q 1 --algo 'bnb'
+# the processing times of Q3 (Q3 solution)
+python3 main.py --q 2 --algo 'bnb'
 
 # Run the Branch and Bound algorithm with 
 # Hue's Heuristic with the processing times of question 2
@@ -17,5 +19,5 @@ python3 main.py --q 1 --algo 'bnb_unbound'
 python3 main.py --q 2 --algo 'bnb_unbound'
 ```
 
-To get a list of partial solutions use the flag `--verbose`, with any command to generate a *.txt file, 
-with the current node at each iteration and total tardiness
+To get a list of partial solutions use the flag `--verbose` or `-v`, with any command to generate a *.txt file, 
+with the current node at each iteration and total tardiness.

@@ -53,7 +53,7 @@ def get_best_schedule_w_heuristic(verbose=False):
         min_job = min(ready, key=lambda x: (hue_distances[x], -x))
 
         if verbose:
-            with open('bnb_hus.txt', 'a' if iterations > 1 else 'w') as f:
+            with open('bnb_hus_partial_solutions.txt', 'a' if iterations > 1 else 'w') as f:
                 f.write(f'---------------------------------------------------------------Iter:[{iterations}]:\n'
                         f'    Current Node: {util_index2job(reversed(schedule))}\n'
                         f'    Node Tardiness: {calc_tardiness_i(missing_jobs)}\n')
@@ -65,6 +65,14 @@ def get_best_schedule_w_heuristic(verbose=False):
 
 
 def calc_tardiness_i(list_of_job_indexes, reverse=False):
+    """
+    Calculate the total tardiness of a list of job indexes.
+
+    :param list_of_job_indexes: List of job indexes to calculate the total tardiness of.
+    :param reverse: True if the list of jobs is not reversed, i.e. the schedule goes from first job to last job.
+                    False otherwise.
+    :return: The total tardiness
+    """
     # Calculate the tardiness of the list of the schedule of jobs.
     # Reverse is True if and only if the schedule is in the correct order
     tardiness = 0
@@ -83,24 +91,16 @@ def calc_tardiness_i(list_of_job_indexes, reverse=False):
     return tardiness
 
 
-def calc_tardiness(list_of_job_indexes, reverse=False):
-    # Calculate the tardiness of the list of the schedule of jobs.
-    # Reverse is True if and only if the schedule is in the correct order
-    tardiness = 0
-    # Total Processing Time
-    end_time = sum(p)
-    if reverse:
-        for j in reversed(list_of_job_indexes):
-            job = J[j - 1]
-            tardiness += max(0, end_time - job[2])
-            end_time -= job[1]
-    else:
-        for j in list_of_job_indexes:
-            job = J[j]
-            tardiness += max(0, end_time - job[2])
-            end_time -= job[1]
-    return tardiness
+def calc_tardiness(schedule):
+    """
+    Calculate the tardiness of a schedule
 
+    :param schedule: List of jobs
+    :return: The total tardiness
+    """
+    # Convert to indexes
+    indexes = [j- 1 for j in schedule]
+    return calc_tardiness_i(indexes, True)
 
 def util_is_feasible(schedule):
     """
@@ -312,6 +312,7 @@ def get_best_schedule(verbose=False):
     Run Branch and Bound algorithm without any limitation to the number of iterations.
     The schedule with the global optimum tardiness is returned.
 
+    :param verbose: Set to True, to print the partial solution, and the total tardiness at each iteration
     :return: global optimum schedule
     """
     iterations = 0
@@ -339,7 +340,7 @@ def get_best_schedule(verbose=False):
         if verbose:
             with open('bnb_unbounded.txt', 'a' if iterations > 1 else 'w') as f:
                 f.write(f'---------------------------------------------------------------Iter:[{iterations}]:\n'
-                        f'    Current Node: {list(j + 1 for j in reversed(list_of_jobs))}\n'
+                        f'    Current Node: {util_index2job(reversed(list_of_jobs))}\n'
                         f'    Node Tardiness: {tardiness}\n')
 
         for job in range(no_of_jobs):
@@ -541,4 +542,4 @@ else:
     print('Nothing to run here')
 
 print(f'Final Schedule: {schedule}\n'
-      f'Total Tardiness: {calc_tardiness(schedule, True)}')
+      f'Total Tardiness: {calc_tardiness(schedule)}')
