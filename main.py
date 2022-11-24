@@ -508,12 +508,12 @@ def get_best_schedule_dfs():
 
 ### Argparser
 parser = argparse.ArgumentParser(
-    prog='SchedulingC Coursework',
+    prog='Scheduling Coursework',
     description='Run scheduling algorithms using processing times from q1 or q3')
 
-parser.add_argument('-q', '--question', choices=[1, 2], type=int, required=True,
+parser.add_argument('-q', '--question', choices=[1, 3], type=int, required=True,
                     help='1 for question 1 processing times, '
-                         '2 for question 2 processing times')
+                         '3 for question 3 processing times')
 parser.add_argument('--algo', type=str, choices=['bnb_unbounded', 'bnb', 'bnb_hus'],
                     required=True, help='Algorithm to run')
 parser.add_argument('-v', '--verbose', action='store_true', help='Print partial solutions for each iteration')
@@ -523,7 +523,7 @@ args = parser.parse_args()
 if args.question == 1:
     print('Using processing times from question 1')
     J, p, d = get_tuple_list_q1()
-elif args.question == 2:
+elif args.question == 3:
     print('Using processing times from question 3')
     J, p, d = get_tuple_list_q3()
 
