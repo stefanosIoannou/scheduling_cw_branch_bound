@@ -17,6 +17,9 @@ python3 main.py --q 1 --algo 'bnb_hus'
 python3 main.py --q 1 --algo 'bnb_unbound'
 # Using Q3 processing times
 python3 main.py --q 3 --algo 'bnb_unbound'
+
+# Run Branch and Bound wit Depth First Search (Q3 Solution)
+python3 main.py --q 3 --algo 'bnb_dfs'
 ```
 
 To get a list of partial solutions use the flag `--verbose` or `-v`, with any command to generate a *.txt file, 

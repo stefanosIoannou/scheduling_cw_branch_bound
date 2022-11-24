@@ -32,16 +32,6 @@ def calculate_hus_heuristic():
 
 def get_best_schedule_w_heuristic(verbose=False):
     """
-    Run Branch and Bound with Hu's Heuristic. Break ties, by scheduling the job with the lowest index first
-
-    :param verbose: Set to True, to print the partial solution, and the total tardiness at each iteration
-    :return: Schedule of jobs
-    """
-    # Method without any modifications, nor iteration limitations
-
-
-def get_best_schedule_w_heuristic():
-    """
     Schedules jobs according to Hu's algorithm
 
     :return: Complete schedule
@@ -475,9 +465,9 @@ def get_best_schedule_dfs(verbose=False):
                 best_schedule = list_of_jobs
 
         if verbose:
-            with open('dfs.txt', 'a' if iterations > 1 else 'w') as f:
+            with open('bnb_dfs_partial_solution.txt', 'a' if iterations > 1 else 'w') as f:
                 f.write(f'---------------------------------------------------------------Iter:[{iterations}]:\n'
-                        f'    Current Node: {list(j + 1 for j in reversed(list_of_jobs))}\n'
+                        f'    Current Node: {util_index2job(reversed(list_of_jobs))}\n'
                         f'    Node Tardiness: {tardiness}\n')
 
         # Instead of adding all the jobs one by one, we batch them and add them after expanding
@@ -517,7 +507,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-q', '--question', choices=[1, 3], type=int, required=True,
                     help='1 for question 1 processing times, '
                          '3 for question 3 processing times')
-parser.add_argument('--algo', type=str, choices=['bnb_unbounded', 'bnb', 'bnb_hus'],
+parser.add_argument('--algo', type=str, choices=['bnb_unbounded', 'bnb', 'bnb_hus', 'bnb_dfs'],
                     required=True, help='Algorithm to run')
 parser.add_argument('-v', '--verbose', action='store_true', help='Print partial solutions for each iteration')
 
@@ -541,6 +531,9 @@ elif args.algo == 'bnb':
 elif args.algo == 'bnb_hus':
     print('Running Branch and Bound with Hu\'s Heuristic (Solution to Q2)')
     schedule = get_best_schedule_w_heuristic(verbose)
+elif args.algo == 'bnb_dfs':
+    print('Running Branch and Bound with DFS (Solution to Q3)')
+    schedule = get_best_schedule_dfs(verbose)
 else:
     print('Nothing to run here')
 
