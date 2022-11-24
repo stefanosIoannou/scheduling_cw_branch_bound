@@ -1,8 +1,5 @@
 import numpy as np
 
-# Processing Times and Duration for Q3
-# p = [4, 17, 2, 2, 6, 2, 21, 6, 13, 6, 6, 2, 4, 4, 6, 13, 13, 13, 2, 4, 2, 4, 21, 6, 25, 17, 2, 4, 13, 2, 17]
-
 no_of_jobs = 31
 
 ## Node Types (Appendix A)
@@ -80,29 +77,6 @@ G[29, 26] = 1
 G[29, 28] = 1
 
 
-# Processing Times from Azure (Q2)
-# Processing Time of vii :        18.8566 ± 0.7569 s
-# Processing Time of blur :       5.7161 ± 0.2901 s
-# Processing Time of night :      22.5914 ± 0.4856 s
-# Processing Time of onnx :       2.9634 ± 0.1677 s
-# Processing Time of emboss :     1.7741 ± 0.6133 s
-# Processing Time of muse :       14.6653 ± 0.4502 s
-# Processing Time of wave :       11.0234 ± 0.6386 s
-# processing_times = dict()
-# processing_times['vii'] = 18.8566
-# processing_times['blur'] = 5.7161
-# processing_times['night'] = 22.5914
-# processing_times['onnx'] = 2.9634
-# processing_times['emboss'] = 1.7741
-# processing_times['muse'] = 14.6653
-# processing_times['wave'] = 11.0234
-
-# p = []
-#
-# for i in range(no_of_jobs):
-#     p.append(processing_times[node_types[i+1].split('_')[0]])
-
-
 def get_tuple_list_q1():
     """
     Return a list of tuples. Each tuple corresponds to a process and follows the following signature:
@@ -139,5 +113,3 @@ def get_tuple_list_q3():
     p = [4, 17, 2, 2, 6, 2, 21, 6, 13, 6, 6, 2, 4, 4, 6, 13, 13, 13, 2, 4, 2, 4, 21, 6, 25, 17, 2, 4, 13, 2, 17]
 
     return list(zip(range(len(p)), p, d)), p, d
-
-# J = list(zip(range(len(p)), p, d))

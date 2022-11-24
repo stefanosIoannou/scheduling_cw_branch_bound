@@ -72,8 +72,6 @@ def calc_tardiness_i(list_of_job_indexes, reverse=False):
                     False otherwise.
     :return: The total tardiness
     """
-    # Calculate the tardiness of the list of the schedule of jobs.
-    # Reverse is True if and only if the schedule is in the correct order
     tardiness = 0
     # Total Processing Time
     end_time = sum(p)
@@ -127,7 +125,6 @@ def util_is_complete(schedule):
     :param schedule: Schedule of jobs
     :return: True if the schedule is complete, False otherwise
     """
-    # Return if the schedule is complete
     return set(range(1, 32)) == set(schedule)
 
 
@@ -146,14 +143,12 @@ def job_can_be_scheduled(job, set_of_jobs: set):
     Return true if a job can be scheduled, given a set of jobs that were already scheduled.
     A job can be scheduled if all its children, i.e. the jobs it has an edge to, have already been added to the
     list (since the jobs are added to the front of the schedule). A job cannot be scheduled if it has already been
-    scheduled. Return false otherwise.
+    scheduled. Return False otherwise.
 
     :param job: job index to be added
     :param set_of_jobs: a set of jobs already scheduled
     :return: True if the job can be scheduled, False otherwise
     """
-    # Check it the job can be schedules, i.e. the children of the job are already in the job_schedule.
-    # Return true if it can be schedules, False otherwise
     dependencies = np.where(G[job] == 1)[0]
     if job in set_of_jobs:
         return False
@@ -400,7 +395,7 @@ def get_best_schedule(verbose=False, heuristic='none', alpha=0.075):
         iterations += 1
         tardiness, list_of_jobs, set_of_jobs = q.get()
         if len(list_of_jobs) == no_of_jobs:
-            print(f'Iterations: {iterations}]')
+            print(f'Iterations: {iterations}')
             return util_index2job(list(reversed(list_of_jobs)))
 
         if verbose:
@@ -437,7 +432,8 @@ def get_best_schedule(verbose=False, heuristic='none', alpha=0.075):
 
 def get_best_schedule_dfs(verbose=False):
     """
-    Apply DFS to find the optimal schedule. Uses upperbound and fathoming to speed prune the stack.
+    Apply DFS to find the optimal schedule (Q3 solution).
+    Uses upperbound and fathoming to speed prune the stack.
 
     :return: global optimum schedule
     """
@@ -510,6 +506,8 @@ parser.add_argument('-q', '--question', choices=[1, 3], type=int, required=True,
 parser.add_argument('--algo', type=str, choices=['bnb_unbounded', 'bnb', 'bnb_hus', 'bnb_dfs'],
                     required=True, help='Algorithm to run')
 parser.add_argument('-v', '--verbose', action='store_true', help='Print partial solutions for each iteration')
+parser.add_argument('--heuristic', choices=["proportion" , "moore_hodgson"], type=str, required=False,
+                    help='Use either \'proportion\' heuristic or \'moore hodgson\' heuristic or no heuristc')
 
 args = parser.parse_args()
 
@@ -523,8 +521,16 @@ elif args.question == 3:
 verbose = args.verbose
 schedule = None
 if args.algo == 'bnb_unbounded':
-    print('Running Branch and Bound Unbounded')
-    schedule = get_best_schedule(verbose)
+    text_msg = 'Running Branch and Bound Unbounded {}'
+    if args.heuristic == "proportion":
+        print(text_msg.format(args.heuristic))
+        schedule = get_best_schedule(verbose, heuristic="proportion")
+    elif args.heuristic == "moore_hodgson":
+        print(text_msg.format(args.heuristic))
+        schedule = get_best_schedule(verbose, heuristic="moore_hodgson")
+    else:
+        print(text_msg.format(''))
+        schedule = get_best_schedule(verbose)
 elif args.algo == 'bnb':
     print('Running Branch and Bound (Solution to Q2)')
     schedule = get_best_schedule_w_iterations(verbose)
@@ -532,8 +538,12 @@ elif args.algo == 'bnb_hus':
     print('Running Branch and Bound with Hu\'s Heuristic (Solution to Q2)')
     schedule = get_best_schedule_w_heuristic(verbose)
 elif args.algo == 'bnb_dfs':
+    import time
+    s = time.time()
     print('Running Branch and Bound with DFS (Solution to Q3)')
     schedule = get_best_schedule_dfs(verbose)
+    e = time.time()
+    print(e-s)
 else:
     print('Nothing to run here')
 
