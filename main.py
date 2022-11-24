@@ -6,8 +6,18 @@ import argparse
 
 
 def calculate_hus_heuristic():
+    """
+    Calculate the Hu's Heuristic for each job. This calculates the distance of the node, to the sink
+
+    :return: Dictionary mapping nodes/job indexes to distances
+    """
     def calculate_length_recursively(job):
-        # If all values in G[job] are 0, then job is a leaf
+        """
+        Method called recursively to calculate the distance of the node to the sink.
+
+        :param job: Job index to find the distance of
+        :return: Distance of the job to the sink
+        """
         if np.sum(G[job]) == 0:
             return 1
         else:
@@ -19,13 +29,21 @@ def calculate_hus_heuristic():
     return path_length
 
 
-def get_best_schedule_w_heuristic():
+def get_best_schedule_w_heuristic(verbose=False):
+    """
+    Run Branch and Bound with Hu's Heuristic. Break ties, by scheduling the job with the lowest index first
+
+    :param verbose: Set to True, to print the partial solution, and the total tardiness at each iteration
+    :return: Schedule of jobs
+    """
     # Method without any modifications, nor iteration limitations
 
     hue_distances = calculate_hus_heuristic()
     schedule = []
     missing_jobs = set(range(no_of_jobs))
+    iterations = 0
     while len(missing_jobs) > 0:
+        iterations += 1
         ready = []
         for job in missing_jobs:
             if job_can_be_scheduled(job, set(schedule)):
@@ -33,6 +51,13 @@ def get_best_schedule_w_heuristic():
         # Hu algorithm schedules first jobs with the highest hue distance, but we are working in reverse. So we get the
         # job with the lowest hue distance and brake ties with the highest job index
         min_job = min(ready, key=lambda x: (hue_distances[x], -x))
+
+        if verbose:
+            with open('bnb_hus.txt', 'a' if iterations > 1 else 'w') as f:
+                f.write(f'---------------------------------------------------------------Iter:[{iterations}]:\n'
+                        f'    Current Node: {util_index2job(reversed(schedule))}\n'
+                        f'    Node Tardiness: {calc_tardiness_i(missing_jobs)}\n')
+
         schedule.append(min_job)
         missing_jobs.remove(min_job)
 
@@ -145,6 +170,7 @@ def get_best_schedule_w_iterations(verbose=False):
     the total tardiness of those nodes is reported. Add the end of the computation the maximum size of the
     pending list is reported. A schedule is returned.
 
+    :param verbose: Set to True, to print the partial solution, and the total tardiness at each iteration
     :return: Schedule found
     """
     # Method without any modifications, nor iteration limitations
@@ -180,14 +206,14 @@ def get_best_schedule_w_iterations(verbose=False):
         if verbose:
             with open('bnb_partial_solutions.txt', 'a' if iterations > 1 else 'w') as f:
                 f.write(f'---------------------------------------------------------------Iter:[{iterations}]:\n'
-                        f'    Current Node: {list(j + 1 for j in reversed(list_of_jobs))}\n'
+                        f'    Current Node: {util_index2job(reversed(list_of_jobs))}\n'
                         f'    Node Tardiness: {tardiness}\n')
 
         # REMOVE COMMENTS TO GET CURRENT NODE AND TOTAL TARDINESS OF FIRST 2
         # AND LAST 2 ITERATIONS
         if iterations <= 2 or iterations == 29999 or iterations == 29998:
             print(f'Iter:[{iterations}]:\n'
-                  f'    Current Node: {list(j + 1 for j in reversed(list_of_jobs))}\n'
+                  f'    Current Node: {util_index2job(reversed(list_of_jobs))}\n'
                   f'    Node Tardiness: {tardiness}\n')
 
         for job in range(no_of_jobs):
@@ -510,7 +536,6 @@ elif args.algo == 'bnb':
     schedule = get_best_schedule_w_iterations(verbose)
 elif args.algo == 'bnb_hus':
     print('Running Branch and Bound with Hu\'s Heuristic (Solution to Q2)')
-    # TODO: Needs attention
     schedule = get_best_schedule_w_heuristic(verbose)
 else:
     print('Nothing to run here')
